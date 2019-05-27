@@ -3,8 +3,7 @@ library(RPostgreSQL)
 library(quantmod)
 
 mdsnap <- function(host, port, dbname, user, password) {
-    pg <- dbDriver("PostgreSQL")
-    conn <- dbConnect(pg, user = user, password = password,
+    conn <- dbConnect(RPostgreSQL::PostgreSQL(), user = user, password = password,
                       host = host, port = port, dbname = dbname)
     on.exit(dbDisconnect(conn))
 
