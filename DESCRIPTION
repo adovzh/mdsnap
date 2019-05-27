@@ -1,0 +1,11 @@
+Package: mdsnap
+Type: Package
+Title: Market Data Snap
+Version: 0.1.0
+Author: Alexander Dovzhikov
+Maintainer: Alexander Dovzhikov <alexander.dovzhikov@gmail.com>
+Description: Market Data Snap
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports: RPostgreSQL, quantmod
