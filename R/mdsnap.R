@@ -45,7 +45,7 @@ mdsnap <- function(host, port, dbname, user, password) {
         sec <- securities[securities$id == sec_id, "name"]
         cat(sprintf("Loading symbol '%s'\n", sec))
         secds <- getSymbols(sec, auto.assign = FALSE)
-        # print(secds)
+
         dbds <- data.frame(security_id = sec_id, job_id = job_id,
                            quote_date = index(secds),
                            quote_open = coredata(secds)[,1],
@@ -60,4 +60,32 @@ mdsnap <- function(host, port, dbname, user, password) {
     }
 
     complete_job(conn, job_id)
+}
+
+mdload <- function(symbols, asof, host, port, dbname, user, password) {
+    conn <- dbConnect(RPostgreSQL::PostgreSQL(), user = user, password = password,
+                      host = host, port = port, dbname = dbname)
+    on.exit(dbDisconnect(conn))
+
+    # find job
+    j <- if (is.null(asof)) {
+        sql <- "SELECT job_id FROM t_job
+                WHERE created_on=(SELECT MAX(created_on) FROM t_job)"
+        dbGetQuery(conn, sql)
+    } else {
+        sql <- "SELECT job_id FROM t_job WHERE created_on::date = $1"
+        dbGetQuery(conn, sql, list(as.character(asof)))
+    }
+
+    # do something with j$job)id
+
+    # find securities
+    result <- lapply(symbols, function(sym) {
+        sql <- "SELECT security_id FROM t_security WHERE security_name = $1"
+        secIds <- dbGetQuery(conn, sql, param = list(sym))
+
+        data.frame(security_id = secIds$security_id)
+    })
+    names(result) <- symbols
+    result
 }
