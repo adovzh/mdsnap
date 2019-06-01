@@ -62,7 +62,9 @@ mdsnap <- function(host, port, dbname, user, password) {
     complete_job(conn, job_id)
 }
 
-mdload <- function(symbols, asof, host, port, dbname, user, password) {
+mdload <- function(symbols, asof = NULL,
+                   features = c("open", "high", "low", "close", "volume", "adjusted"),
+                   host, port, dbname, user, password) {
     conn <- dbConnect(RPostgreSQL::PostgreSQL(), user = user, password = password,
                       host = host, port = port, dbname = dbname)
     on.exit(dbDisconnect(conn))
@@ -77,14 +79,17 @@ mdload <- function(symbols, asof, host, port, dbname, user, password) {
         dbGetQuery(conn, sql, list(as.character(asof)))
     }
 
-    # do something with j$job)id
-
     # find securities
     result <- lapply(symbols, function(sym) {
         sql <- "SELECT security_id FROM t_security WHERE security_name = $1"
-        secIds <- dbGetQuery(conn, sql, param = list(sym))
+        sec <- dbGetQuery(conn, sql, param = list(sym))
 
-        data.frame(security_id = secIds$security_id)
+        lst_features <- paste(paste0(", quote_", features), collapse = "")
+        sql <- paste0("SELECT quote_date", lst_features, " FROM t_quote
+                      WHERE security_id = $1 and job_id = $2")
+        mdata <- dbGetQuery(conn, sql, list(sec$security_id, j$job_id))
+        colnames(mdata) <- c(data, features)
+        xts(mdata[, -1], order.by = mdata[, 1])
     })
     names(result) <- symbols
     result
