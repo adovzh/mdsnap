@@ -94,3 +94,7 @@ mdload <- function(symbols, asof = NULL,
     names(result) <- symbols
     result
 }
+
+mdsnap_test <- function() {
+    getSymbols("VGAD.AX", auto.assign = FALSE)
+}
