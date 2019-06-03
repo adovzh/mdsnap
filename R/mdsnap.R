@@ -14,13 +14,13 @@ open_job <- function(conn) {
     seq_job$job_id
 }
 
-complete_job <- function(conn, job_id) {
+complete_job <- function(conn, job_id, job_status) {
     # complete a job
     rs <- dbSendStatement(conn, "UPDATE t_job
                           SET job_status_id=(SELECT job_status_id
-                          FROM t_job_status WHERE job_status_name='COMPLETED'),
-                          modified_on=current_timestamp where job_id=$1",
-                          param = list(job_id))
+                          FROM t_job_status WHERE job_status_name=$1),
+                          modified_on=current_timestamp where job_id=$2",
+                          param = list(job_status, job_id))
     jobs_updated <- dbGetRowsAffected(rs)
     dbClearResult(rs)
 
@@ -40,26 +40,33 @@ mdsnap <- function(host, port, dbname, user, password) {
 
     cat(sprintf("Running new job: %d\n", job_id))
 
-    for (sec_id in securities$id) {
-        # load market data for sec
-        sec <- securities[securities$id == sec_id, "name"]
-        cat(sprintf("Loading symbol '%s'\n", sec))
-        secds <- getSymbols(sec, auto.assign = FALSE)
+    job_status <- tryCatch({
+        for (sec_id in securities$id) {
+            # load market data for sec
+            sec <- securities[securities$id == sec_id, "name"]
+            cat(sprintf("Loading symbol '%s'\n", sec))
+            secds <- getSymbols(sec, auto.assign = FALSE)
 
-        dbds <- data.frame(security_id = sec_id, job_id = job_id,
-                           quote_date = index(secds),
-                           quote_open = coredata(secds)[,1],
-                           quote_high=coredata(secds)[,2],
-                           quote_low=coredata(secds)[,3],
-                           quote_close=coredata(secds)[,4],
-                           quote_volume=coredata(secds)[,5],
-                           quote_adjusted=coredata(secds)[,6])
-        cat(sprintf("Writing %d rows for symbol %s into database\n",
-                    nrow(dbds), sec))
-        dbWriteTable(conn, "t_quote", dbds, row.names=FALSE, append = TRUE)
-    }
+            dbds <- data.frame(security_id = sec_id, job_id = job_id,
+                               quote_date = index(secds),
+                               quote_open = coredata(secds)[,1],
+                               quote_high=coredata(secds)[,2],
+                               quote_low=coredata(secds)[,3],
+                               quote_close=coredata(secds)[,4],
+                               quote_volume=coredata(secds)[,5],
+                               quote_adjusted=coredata(secds)[,6])
+            cat(sprintf("Writing %d rows for symbol %s into database\n",
+                        nrow(dbds), sec))
+            dbWriteTable(conn, "t_quote", dbds, row.names=FALSE, append = TRUE)
+        }
 
-    complete_job(conn, job_id)
+        return("COMPLETED")
+    }, error = function(e) {
+        cat(sprintf("Error: %s\n", e))
+        return("FAILED")
+    })
+
+    complete_job(conn, job_id, job_status)
 }
 
 mdload <- function(symbols, asof = NULL,
