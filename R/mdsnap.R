@@ -24,6 +24,8 @@ complete_job <- function(conn, job_id, job_status) {
     jobs_updated <- dbGetRowsAffected(rs)
     dbClearResult(rs)
 
+    sprintf(cat("Job %d is %s\n", job_id, job_status))
+
     stopifnot(jobs_updated == 1)
 }
 
@@ -46,6 +48,8 @@ mdsnap <- function(host, port, dbname, user, password) {
             sec <- securities[securities$id == sec_id, "name"]
             cat(sprintf("Loading symbol '%s'\n", sec))
             secds <- getSymbols(sec, auto.assign = FALSE)
+            # remove duplicate elements (sometimes happens)
+            secds <- make.index.unique(secds, drop = TRUE)
 
             dbds <- data.frame(security_id = sec_id, job_id = job_id,
                                quote_date = index(secds),

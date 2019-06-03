@@ -1,7 +1,7 @@
 Package: mdsnap
 Type: Package
 Title: Market Data Snap
-Version: 0.1.0
+Version: 0.1.1
 Author: Alexander Dovzhikov
 Maintainer: Alexander Dovzhikov <alexander.dovzhikov@gmail.com>
 Description: Market Data Snap
