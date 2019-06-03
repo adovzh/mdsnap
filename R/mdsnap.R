@@ -64,10 +64,10 @@ mdsnap <- function(host, port, dbname, user, password) {
             dbWriteTable(conn, "t_quote", dbds, row.names=FALSE, append = TRUE)
         }
 
-        return("COMPLETED")
+        "COMPLETED"
     }, error = function(e) {
         cat(sprintf("Error: %s\n", e))
-        return("FAILED")
+        "FAILED"
     })
 
     complete_job(conn, job_id, job_status)
@@ -104,8 +104,4 @@ mdload <- function(symbols, asof = NULL,
     })
     names(result) <- symbols
     result
-}
-
-mdsnap_test <- function() {
-    getSymbols("VGAD.AX", auto.assign = FALSE)
 }
