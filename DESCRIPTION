@@ -5,7 +5,7 @@ Version: 0.1.2
 Author: Alexander Dovzhikov
 Maintainer: Alexander Dovzhikov <alexander.dovzhikov@gmail.com>
 Description: Market Data Snap.
-License: MIT + file LICENSE
+License: MIT + file LICENCE
 Encoding: UTF-8
 LazyData: true
 Depends: DBI (>= 0.3), RPostgreSQL (>= 0.6), quantmod (>= 0.4)
