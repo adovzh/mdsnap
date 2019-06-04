@@ -97,7 +97,7 @@ mdsnap <- function(host, port, dbname, user, password) {
 
 #' Market Data Load
 #'
-#' This function loads the specified set of sybmols from the database
+#' This function loads the specified set of symbols from the database
 #' into an xts object.
 #' @param symbols A set of symbols to extract, must be specified explicitly.
 #' @param asof Allows to specify a snapshot to extract, NULL means to latest.

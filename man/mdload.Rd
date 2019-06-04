@@ -25,7 +25,7 @@ mdload(symbols, asof = NULL, features = c("open", "high", "low",
 \item{password}{Database password.}
 }
 \description{
-This function loads the specified set of sybmols from the database
+This function loads the specified set of symbols from the database
 into an xts object.
 }
 \author{
