@@ -1,36 +1,16 @@
-# library(DBI)
-# library(RPostgreSQL)
-# library(quantmod)
-
-#' @importFrom DBI dbSendStatement dbGetRowsAffected dbClearResult
-
+#' @importFrom DBI dbGetQuery
 open_job <- function(conn) {
-    # create a new job
-    seq_job <- dbGetQuery(conn, "SELECT nextval('seq_job') AS job_id")
-    rs <- dbSendStatement(conn, "INSERT INTO t_job (job_id) VALUES ($1)",
-                          param = list(seq_job$job_id))
-    jobs_inserted <- dbGetRowsAffected(rs)
-    dbClearResult(rs)
-
-    stopifnot(jobs_inserted == 1)
-    seq_job$job_id
+    seq_id <- dbGetQuery(conn, "SELECT start_job('quantmod') AS job_id")
+    seq_id$job_id
 }
 
-#' @importFrom DBI dbSendStatement dbGetRowsAffected dbClearResult
-
+#' @importFrom DBI dbExecute
 complete_job <- function(conn, job_id, job_status) {
     # complete a job
-    rs <- dbSendStatement(conn, "UPDATE t_job
-                          SET job_status_id=(SELECT job_status_id
-                          FROM t_job_status WHERE job_status_name=$1),
-                          modified_on=current_timestamp where job_id=$2",
-                          param = list(job_status, job_id))
-    jobs_updated <- dbGetRowsAffected(rs)
-    dbClearResult(rs)
+    dbExecute(conn, "CALL complete_job($1, $2)",
+              param = list(job_id, job_status))
 
     cat(sprintf("Job %d is %s\n", job_id, job_status))
-
-    stopifnot(jobs_updated == 1)
 }
 
 #' Market Data Snap
@@ -55,7 +35,10 @@ mdsnap <- function(host, port, dbname, user, password) {
                       host = host, port = port, dbname = dbname)
     on.exit(dbDisconnect(conn))
 
-    secQuery <- "SELECT security_id AS id, security_name AS name FROM t_security"
+    secQuery <- "SELECT security_id AS id, security_name AS name
+                 FROM t_security s inner join t_snap_source ss
+                    on s.snap_source_id = ss.snap_source_id
+                 WHERE ss.snap_source_name = 'quantmod'"
     securities <- dbGetQuery(conn, secQuery)
 
     # create a new job
@@ -68,7 +51,7 @@ mdsnap <- function(host, port, dbname, user, password) {
             # load market data for sec
             sec <- securities[securities$id == sec_id, "name"]
             cat(sprintf("Loading symbol '%s'\n", sec))
-            # load symbol and suppress wasrnings about missing values
+            # load symbol and suppress warnings about missing values
             secds <- suppressWarnings(getSymbols(sec, auto.assign = FALSE))
             # remove duplicate elements (sometimes happens)
             secds <- make.index.unique(secds, drop = TRUE)
