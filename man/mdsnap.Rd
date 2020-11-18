@@ -4,18 +4,10 @@
 \alias{mdsnap}
 \title{Market Data Snap}
 \usage{
-mdsnap(host, port, dbname, user, password)
+mdsnap(ctx)
 }
 \arguments{
-\item{host}{Database host.}
-
-\item{port}{Database port}
-
-\item{dbname}{Database name.}
-
-\item{user}{Database user.}
-
-\item{password}{Database password.}
+\item{ctx}{Database context}
 }
 \description{
 This function snaps current market data snapshot for the symbols universe

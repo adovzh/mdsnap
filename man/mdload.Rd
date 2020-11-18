@@ -4,25 +4,21 @@
 \alias{mdload}
 \title{Market Data Load}
 \usage{
-mdload(symbols, asof = NULL, features = c("open", "high", "low",
-  "close", "volume", "adjusted"), host, port, dbname, user, password)
+mdload(
+  ctx,
+  symbols,
+  asof = NULL,
+  features = c("open", "high", "low", "close", "volume", "adjusted")
+)
 }
 \arguments{
+\item{ctx}{Database context}
+
 \item{symbols}{A set of symbols to extract, must be specified explicitly.}
 
 \item{asof}{Allows to specify a snapshot to extract, NULL means to latest.}
 
 \item{features}{Features to extract.}
-
-\item{host}{Database host.}
-
-\item{port}{Database port}
-
-\item{dbname}{Database name.}
-
-\item{user}{Database user.}
-
-\item{password}{Database password.}
 }
 \description{
 This function loads the specified set of symbols from the database

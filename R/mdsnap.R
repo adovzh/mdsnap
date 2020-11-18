@@ -1,39 +1,23 @@
-#' @importFrom DBI dbGetQuery
-open_job <- function(conn) {
-    seq_id <- dbGetQuery(conn, "SELECT start_job('quantmod') AS job_id")
-    seq_id$job_id
-}
-
-#' @importFrom DBI dbExecute
-complete_job <- function(conn, job_id, job_status) {
-    # complete a job
-    dbExecute(conn, "CALL complete_job($1, $2)",
-              param = list(job_id, job_status))
-
-    cat(sprintf("Job %d is %s\n", job_id, job_status))
-}
-
 #' Market Data Snap
 #'
 #' This function snaps current market data snapshot for the symbols universe
 #' and puts them into PostgreSQL database. The universe is configured in the
 #' database itself and needs to be set up manually.
-#' @param host Database host.
-#' @param port Database port
-#' @param dbname Database name.
-#' @param user Database user.
-#' @param password Database password.
+#' @param ctx Database context
 #' @export
-#' @importFrom DBI dbConnect dbDisconnect dbGetQuery dbWriteTable
+#' @importFrom DBI dbGetQuery dbWriteTable
 #' @importFrom RPostgreSQL PostgreSQL
 #' @importFrom quantmod getSymbols
 #' @importFrom zoo coredata index
 #' @importFrom xts make.index.unique
 
-mdsnap <- function(host, port, dbname, user, password) {
-    conn <- dbConnect(RPostgreSQL::PostgreSQL(), user = user, password = password,
-                      host = host, port = port, dbname = dbname)
-    on.exit(dbDisconnect(conn))
+mdsnap <- function(ctx) {
+    if (!db_connected(ctx)) {
+        db_connect(ctx)
+        on.exit(db_disconnect(ctx), add = TRUE)
+    }
+
+    conn <- ctx$conn
 
     secQuery <- "SELECT security_id AS id, security_name AS name
                  FROM t_security s inner join t_snap_source ss
@@ -82,36 +66,24 @@ mdsnap <- function(host, port, dbname, user, password) {
 #'
 #' This function loads the specified set of symbols from the database
 #' into an xts object.
+#' @param ctx Database context
 #' @param symbols A set of symbols to extract, must be specified explicitly.
 #' @param asof Allows to specify a snapshot to extract, NULL means to latest.
 #' @param features Features to extract.
-#' @param host Database host.
-#' @param port Database port
-#' @param dbname Database name.
-#' @param user Database user.
-#' @param password Database password.
 #' @export
-#' @importFrom DBI dbConnect dbDisconnect dbGetQuery
-#' @importFrom RPostgreSQL PostgreSQL
+#' @importFrom DBI dbGetQuery
 #' @importFrom xts xts
 #' @author Alexander Dovzhikov, \email{alexander.dovzhikov@gmail.com}
 
-mdload <- function(symbols, asof = NULL,
-                   features = c("open", "high", "low", "close", "volume", "adjusted"),
-                   host, port, dbname, user, password) {
-    conn <- dbConnect(RPostgreSQL::PostgreSQL(), user = user, password = password,
-                      host = host, port = port, dbname = dbname)
-    on.exit(dbDisconnect(conn))
-
-    # find job
-    j <- if (is.null(asof)) {
-        sql <- "SELECT job_id FROM t_job
-                WHERE created_on=(SELECT MAX(created_on) FROM t_job)"
-        dbGetQuery(conn, sql)
-    } else {
-        sql <- "SELECT job_id FROM t_job WHERE created_on::date = $1"
-        dbGetQuery(conn, sql, list(as.character(asof)))
+mdload <- function(ctx, symbols, asof = NULL,
+                   features = c("open", "high", "low", "close", "volume", "adjusted")) {
+    if (!db_connected(ctx)) {
+        db_connect(ctx)
+        on.exit(db_disconnect(ctx), add = TRUE)
     }
+
+    conn <- ctx$conn
+    j <- find_job(ctx)
 
     # find securities
     result <- lapply(symbols, function(sym) {
@@ -121,7 +93,7 @@ mdload <- function(symbols, asof = NULL,
         lst_features <- paste(paste0(", quote_", features), collapse = "")
         sql <- paste0("SELECT quote_date", lst_features, " FROM t_quote
                       WHERE security_id = $1 and job_id = $2")
-        mdata <- dbGetQuery(conn, sql, list(sec$security_id, j$job_id))
+        mdata <- dbGetQuery(conn, sql, list(sec$security_id, j$id))
         colnames(mdata) <- c("date", features)
         xts(mdata[, -1], order.by = mdata[, 1])
     })
