@@ -33,7 +33,7 @@ portfolio_load <- function(conn, portfolio_name) {
 buysell <- function(b) as.logical(b) * 2 - 1
 
 #' @export
-#' @importFrom dplyr filter mutate group_by summarise
+#' @importFrom dplyr %>% filter mutate group_by summarise
 #' @author Alexander Dovzhikov
 portfolio_alloc <- function(portfolio, asof = Sys.Date()) {
     alloc <- p %>% filter(date <= asof) %>%
