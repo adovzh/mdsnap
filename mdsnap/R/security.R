@@ -18,3 +18,7 @@ security_list <- function(conn) {
 non_cash_secutity_names <- function(sec) {
     sec %>% filter(source != "cash") %>% select(name) %>% pull()
 }
+
+cash_security_name <- function(sec) {
+    sec %>% filter(source == "cash") %>% select(name) %>% pull()
+}

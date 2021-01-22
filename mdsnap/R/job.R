@@ -68,7 +68,7 @@ list_jobs <- function(ctx, type = "completed") {
 
     sql <- "select
                 job_id as id,
-                job_status_name as job_status,
+                job_status_name as status,
                 snap_source_name as snap_source,
                 created_on,
                 modified_on

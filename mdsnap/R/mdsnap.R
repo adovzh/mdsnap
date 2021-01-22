@@ -83,7 +83,7 @@ mdload <- function(ctx, symbols, asof = NULL,
     }
 
     conn <- ctx$conn
-    j <- find_job(ctx)
+    j <- find_job(ctx, asof)
 
     # find securities
     result <- lapply(symbols, function(sym) {

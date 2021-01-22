@@ -30,9 +30,10 @@ db_connect <- function(ctx) {
         ctx$conn <- dbConnect(RPostgreSQL::PostgreSQL(), user = ctx$user,
                               password = ctx$password, host = ctx$host,
                               port = ctx$port, dbname = ctx$dbname)
-        loginfo(paste0("Connected to ", ctx$host, ":", ctx$port))
+        logdebug("Connected to %s:%s", ctx$host, ctx$port,
+                 logger = "mdsnap.dbcontext")
     } else {
-        loginfo("Connection already open")
+        logdebug("Connection already open", logger = "mdsnap.dbcontext")
     }
 }
 
@@ -50,9 +51,10 @@ db_disconnect <- function(ctx) {
     if (db_connected(ctx)) {
         dbDisconnect(ctx$conn)
         ctx$conn <- NULL
-        loginfo(paste0("Disconnected from ", ctx$host, ":", ctx$port))
+        logdebug("Disconnected from %s:%s", ctx$host, ctx$port,
+                 logger = "mdsnap.dbcontext")
     } else {
-        loginfo("Connection is already closed")
+        logdebug("Connection is already closed", logger = "mdsnap.dbcontext")
     }
 }
 
