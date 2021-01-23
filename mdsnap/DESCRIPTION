@@ -8,6 +8,9 @@ Description: Market Data Snap.
 License: MIT + file LICENCE
 Encoding: UTF-8
 LazyData: true
-Depends: DBI (>= 0.3), RPostgreSQL (>= 0.6), quantmod (>= 0.4), logging(>= 0.10)
-Imports: xts, zoo
+Depends: DBI (>= 0.3), 
+         RPostgreSQL (>= 0.6), 
+         quantmod (>= 0.4)
+Imports: xts, zoo, dplyr, magrittr, 
+         logging(>= 0.10)
 RoxygenNote: 7.1.1

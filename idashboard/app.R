@@ -1,5 +1,6 @@
 library(shinydashboard)
 library(mdsnap)
+library(logging)
 
 ctx <- defdbcontext(host = Sys.getenv("MDB_HOST"),
                     port = Sys.getenv("MDB_PORT"),
@@ -11,12 +12,14 @@ pname <- portfolio_list(ctx)[1, "name"]
 p <- portfolio_load(ctx$conn, pname)
 
 idashboard_cleanup <- function() {
-    cat("I-Dashboard cleanup")
     db_disconnect(ctx)
+    conn_status <- if (db_connected(ctx)) "connected" else "disconnected"
+    loginfo("I-Dashboard cleanup, status: %s", conn_status)
 }
 
 idashboard_onStart <- function() {
-    cat("I-Dashboard setup")
+    conn_status <- if (db_connected(ctx)) "connected" else "disconnected"
+    loginfo("I-Dashboard setup, status: %s", conn_status)
     onStop(idashboard_cleanup)
 }
 

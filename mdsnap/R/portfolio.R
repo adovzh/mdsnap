@@ -33,10 +33,11 @@ portfolio_load <- function(conn, portfolio_name) {
 buysell <- function(b) as.logical(b) * 2 - 1
 
 #' @export
-#' @importFrom dplyr %>% filter mutate group_by summarise
+#' @importFrom magrittr %>%
+#' @importFrom dplyr filter mutate group_by summarise
 #' @author Alexander Dovzhikov
 portfolio_alloc <- function(portfolio, asof = Sys.Date()) {
-    alloc <- p %>% filter(date <= asof) %>%
+    alloc <- portfolio %>% filter(date <= asof) %>%
         mutate(signed_units = units * buysell(buy_flag)) %>%
         group_by(security) %>% summarise(total_units = sum(signed_units))
 

@@ -43,7 +43,7 @@ db_connect <- function(ctx) {
 #' @export
 #' @importFrom DBI dbDisconnect
 #' @importFrom RPostgreSQL PostgreSQL
-#' @importFrom logging loginfo
+#' @importFrom logging logdebug
 db_disconnect <- function(ctx) {
     # ctx must of class dbcontext
     stopifnot(is_dbcontext(ctx))

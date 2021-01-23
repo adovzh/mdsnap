@@ -4,3 +4,4 @@
 .Ruserdata
 *.RProj
 LICENCE
+db-env.sh
