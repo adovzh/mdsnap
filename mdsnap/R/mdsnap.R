@@ -95,7 +95,7 @@ mdload <- function(ctx, symbols, asof = NULL,
                       WHERE security_id = $1 and job_id = $2")
         mdata <- dbGetQuery(conn, sql, list(sec$security_id, j$id))
         colnames(mdata) <- c("date", features)
-        xts(mdata[, -1], order.by = mdata[, 1])
+        xts(mdata[-1], order.by = mdata[, 1])
     })
     names(result) <- symbols
     result

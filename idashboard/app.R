@@ -47,6 +47,8 @@ server <- function(input, output) {
     sl <- security_list(ctx$conn)
     psyms <- securities(pa, sl, "non_cash")
     csyms <- securities(pa, sl, "cash")
+    mdr <- mdrates(ctx, psyms, "close")
+    mdr_snapshot <- rates_snapshot(mdr)$close
 
     output$debug <- renderPrint({
         pa
@@ -68,10 +70,17 @@ server <- function(input, output) {
     })
 
     output$dt_holdings <- renderDT({
+        # index set of non cash portfolio securities in palloc
+        hld_nc_idx <- match(psyms, pa$alloc$security)
+
+        # table columns
+        hld_units <- pa$alloc$total_units[hld_nc_idx]
+        hld_last_price <- mdr_snapshot[hld_nc_idx, "LastRate"]
+
         holdings <- data.frame(Code = psyms,
-                               `Units` = c(85.04, 79.65, 487.92),
-                               `Last Price` = c(85.04, 79.65, 487.92),
-                               `Market Value` = c(85.04, 79.65, 487.92))
+                               `Units` = hld_units,
+                               `Last Price` = hld_last_price,
+                               `Market Value` = hld_units * hld_last_price)
         sketch <- htmltools::withTags(table(
             tableHeader(c("Code", "Units", "Last Price", "Market Value")),
             tableFooter(c("Total", "", "", 0))))
