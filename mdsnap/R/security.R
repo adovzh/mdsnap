@@ -12,13 +12,20 @@ security_list <- function(conn) {
                 ss.snap_source_name as source
             from t_security s
                 inner join t_snap_source ss on s.snap_source_id = ss.snap_source_id"
-    dbGetQuery(conn, sql)
+    rs <- dbGetQuery(conn, sql)
+    class(rs) <- append(class(rs), "sl")
+    rs
 }
 
-non_cash_secutity_names <- function(sec) {
-    sec %>% filter(source != "cash") %>% select(name) %>% pull()
+#' @export
+#' @author Alexander Dovzhikov
+security_names <- function(sl, ...) UseMethod("security_names", sl)
+
+#' @export
+#' @author Alexander Dovzhikov
+security_names.sl <- function(sl, source = "all") {
+    if (source == "non_cash") sl[sl$source != "cash", "name"]
+    else if (source == "all") sl$name
+    else sl[sl$source == source, "name"]
 }
 
-cash_security_name <- function(sec) {
-    sec %>% filter(source == "cash") %>% select(name) %>% pull()
-}
