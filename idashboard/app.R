@@ -73,7 +73,7 @@ server <- function(input, output) {
     cash_index <- which(pa$alloc$security == csyms)
     cash <- pa$alloc$total_units[cash_index]
     equity <- sum(holdings$Market.Value) + cash
-
+    lvr_ratio <- -cash / sum(holdings$Market.Value)
 
     output$debug <- renderPrint({
         pa
@@ -129,9 +129,10 @@ server <- function(input, output) {
     })
 
     output$gear_amount <- renderText({
-        sprintf("This portfolio is geared by %s. Equity is %s.",
+        sprintf("This portfolio is geared by %s. Equity is %s. LVR %.2f%%",
                 priceR::format_dollars(-cash, 2),
-                priceR::format_dollars(equity, 2))
+                priceR::format_dollars(equity, 2),
+                lvr_ratio * 100)
     })
 }
 
