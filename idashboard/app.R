@@ -2,6 +2,7 @@ library(shinydashboard)
 library(DT)
 library(mdsnap)
 library(logging)
+library(ggplot2)
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
@@ -12,14 +13,18 @@ ui <- dashboardPage(
     dashboardBody(
         fluidRow(
             box(title = "Holdings", solidHeader = TRUE,
-                status = "primary", DTOutput("dt_holdings")),
+                status = "primary", DTOutput("dt_holdings"), br(),
+                textOutput("gear_amount")),
+            box(title = "Summary Chart",
+                solidHeader = TRUE,
+                status = "primary", plotOutput("summary_chart"))
+        ),
+        fluidRow(
             infoBoxOutput("asof"),
             infoBox("Portfolio", pname, icon = icon("briefcase")),
             infoBoxOutput("last_date_available")
         ),
         fluidRow(
-            box(title = "Portfolio Allocation", solidHeader = TRUE,
-                status = "primary", tableOutput("alloc_summary")),
             box(title = "Debug", solidHeader = TRUE, status = "primary",
                 verbatimTextOutput("debug"))
         )
@@ -50,6 +55,26 @@ server <- function(input, output) {
     mdr <- mdrates(ctx, psyms, "close")
     mdr_snapshot <- rates_snapshot(mdr)$close
 
+
+    # Holdings table
+    # index set of non cash portfolio securities in palloc
+    hld_nc_idx <- match(psyms, pa$alloc$security)
+
+    # table columns
+    hld_units <- pa$alloc$total_units[hld_nc_idx]
+    hld_last_price <- mdr_snapshot[hld_nc_idx, "LastRate"]
+
+    holdings <- data.frame(Code = psyms,
+                           `Units` = hld_units,
+                           `Last Price` = hld_last_price,
+                           `Market Value` = hld_units * hld_last_price)
+
+    # gear and equity
+    cash_index <- which(pa$alloc$security == csyms)
+    cash <- pa$alloc$total_units[cash_index]
+    equity <- sum(holdings$Market.Value) + cash
+
+
     output$debug <- renderPrint({
         pa
     })
@@ -58,8 +83,21 @@ server <- function(input, output) {
         infoBox("As Of", pa$asof, icon = icon("calendar"))
     })
 
-    output$alloc_summary <- renderTable({
-        pa$alloc
+    output$summary_chart <- renderPlot({
+        chart_holdings <- holdings[order(holdings$Code, decreasing = TRUE),
+                                   c("Code", "Market.Value")]
+        mv <- chart_holdings$Market.Value
+        total_mv <- sum(mv)
+        # print(chart_holdings)
+        chart_holdings <- cbind(chart_holdings,
+                                lab = sprintf("%.2f%%", mv / total_mv * 100),
+                                lab.pos = cumsum(mv) - 0.5 * mv)
+        ggplot(chart_holdings, aes(x = "", y = Market.Value, fill = Code)) +
+            geom_bar(width = 1, stat = "identity", color = "white") +
+            coord_polar(theta = "y") +
+            geom_text(aes(y = lab.pos, label = lab, fontface = 2),
+                      color = "white", size = 5) +
+            theme_void()
     })
 
     output$last_date_available <- renderInfoBox({
@@ -70,24 +108,13 @@ server <- function(input, output) {
     })
 
     output$dt_holdings <- renderDT({
-        # index set of non cash portfolio securities in palloc
-        hld_nc_idx <- match(psyms, pa$alloc$security)
-
-        # table columns
-        hld_units <- pa$alloc$total_units[hld_nc_idx]
-        hld_last_price <- mdr_snapshot[hld_nc_idx, "LastRate"]
-
-        holdings <- data.frame(Code = psyms,
-                               `Units` = hld_units,
-                               `Last Price` = hld_last_price,
-                               `Market Value` = hld_units * hld_last_price)
         sketch <- htmltools::withTags(table(
             tableHeader(c("Code", "Units", "Last Price", "Market Value")),
             tableFooter(c("Total", "", "", 0))))
         footerJs <- "function( tfoot, data, start, end, display ) {
             var api = this.api()
             total = api.column(3).data().reduce(function(a,b){return a+b})
-            $(api.column(3).footer()).html(total.toFixed(2))
+            $(api.column(3).footer()).html('$' + total.toFixed(2).replace(/\\d(?=(\\d{3})+\\.)/g, '$&,'))
         }"
         datatable(holdings,
                   container = sketch,
@@ -98,7 +125,13 @@ server <- function(input, output) {
                                  info = FALSE,
                                  footerCallback = JS(footerJs)),
                   rownames = FALSE,
-                  selection = "none")
+                  selection = "none") %>% formatCurrency("Market.Value")
+    })
+
+    output$gear_amount <- renderText({
+        sprintf("This portfolio is geared by %s. Equity is %s.",
+                priceR::format_dollars(-cash, 2),
+                priceR::format_dollars(equity, 2))
     })
 }
 
