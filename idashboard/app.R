@@ -21,7 +21,7 @@ ui <- dashboardPage(
         ),
         fluidRow(
             infoBoxOutput("asof"),
-            infoBox("Portfolio", pname, icon = icon("briefcase")),
+            infoBoxOutput("portfolio_name"),
             infoBoxOutput("last_date_available")
         ),
         fluidRow(
@@ -83,6 +83,10 @@ server <- function(input, output) {
         infoBox("As Of", pa$asof, icon = icon("calendar"))
     })
 
+    output$portfolio_name <- renderInfoBox({
+        infoBox("Portfolio", pname, icon = icon("briefcase"))
+    })
+
     output$summary_chart <- renderPlot({
         chart_holdings <- holdings[order(holdings$Code, decreasing = TRUE),
                                    c("Code", "Market.Value")]
@@ -125,7 +129,9 @@ server <- function(input, output) {
                                  info = FALSE,
                                  footerCallback = JS(footerJs)),
                   rownames = FALSE,
-                  selection = "none") %>% formatCurrency("Market.Value")
+                  selection = "none") %>%
+            formatRound("Last.Price", digits = 2) %>%
+            formatCurrency("Market.Value")
     })
 
     output$gear_amount <- renderText({

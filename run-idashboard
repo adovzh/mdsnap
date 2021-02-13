@@ -1,0 +1,4 @@
+#!/usr/bin/env Rscript
+
+shiny::runApp("idashboard", port = 7676, launch.browser = TRUE)
+
