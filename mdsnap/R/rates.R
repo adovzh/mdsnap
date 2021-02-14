@@ -3,20 +3,15 @@
 #'
 #' @export
 #' @author Alexander Dovzhikov
-mdrates <- function(ctx, symbols,
+mdrates <- function(conn, symbols,
                     features = c("open", "high", "low", "close", "volume", "adjusted")) {
-    if (!db_connected(ctx)) {
-        db_connect(ctx)
-        on.exit(db_disconnect(ctx), add = TRUE)
-    }
-
     # fetch the list of all the securities in the database
-    sl <- security_list(ctx$conn)
+    sl <- security_list(conn)
     # non cash securities
     ncsec <- security_names(sl, source = "non_cash")
     stopifnot(symbols %in% ncsec)
 
-    mds <- mdload(ctx, symbols, features = features)
+    mds <- mdload(conn, symbols, features = features)
     sapply(features, function(feature) {
         ds <- do.call(merge, sapply(mds, function(ds) ds[, feature],
                                     simplify = FALSE))

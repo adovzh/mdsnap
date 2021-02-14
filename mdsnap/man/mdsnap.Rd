@@ -4,10 +4,10 @@
 \alias{mdsnap}
 \title{Market Data Snap}
 \usage{
-mdsnap(ctx)
+mdsnap(conn)
 }
 \arguments{
-\item{ctx}{Database context}
+\item{conn}{Database connection or connection pool}
 }
 \description{
 This function snaps current market data snapshot for the symbols universe

@@ -5,14 +5,14 @@
 \title{Market Data Load}
 \usage{
 mdload(
-  ctx,
+  conn,
   symbols,
   asof = NULL,
   features = c("open", "high", "low", "close", "volume", "adjusted")
 )
 }
 \arguments{
-\item{ctx}{Database context}
+\item{conn}{Database connection or connection pool}
 
 \item{symbols}{A set of symbols to extract, must be specified explicitly.}
 

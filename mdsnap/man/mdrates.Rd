@@ -6,7 +6,7 @@
 Each zoo object contains observations for the symbols requested.}
 \usage{
 mdrates(
-  ctx,
+  conn,
   symbols,
   features = c("open", "high", "low", "close", "volume", "adjusted")
 )

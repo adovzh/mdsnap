@@ -19,14 +19,7 @@ complete_job <- function(conn, job_id, job_status) {
 #' @export
 #' @importFrom DBI dbGetQuery
 #' @author Alexander Dovzhikov
-find_job <- function(ctx, asof = NULL) {
-    if (!db_connected(ctx)) {
-        db_connect(ctx)
-        on.exit(db_disconnect(ctx), add = TRUE)
-    }
-
-    conn <- ctx$conn
-
+find_job <- function(conn, asof = NULL) {
     sql <- "select
                 job_id as id,
                 job_status_name as job_status,
@@ -56,14 +49,7 @@ find_job <- function(ctx, asof = NULL) {
 #' @export
 #' @importFrom DBI dbGetQuery
 #' @author Alexander Dovzhikov
-list_jobs <- function(ctx, type = "completed") {
-    if (!db_connected(ctx)) {
-        db_connect(ctx)
-        on.exit(db_disconnect(ctx), add = TRUE)
-    }
-
-    conn <- ctx$conn
-
+list_jobs <- function(conn, type = "completed") {
     # TODO: check status is one of the supported statuses
 
     sql <- "select

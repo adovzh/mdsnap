@@ -4,7 +4,7 @@
 \alias{list_jobs}
 \title{List Jobs}
 \usage{
-list_jobs(ctx, type = "completed")
+list_jobs(conn, type = "completed")
 }
 \description{
 List all the jobs of the specified type.

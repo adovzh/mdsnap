@@ -4,7 +4,7 @@
 \alias{find_job}
 \title{Find Job}
 \usage{
-find_job(ctx, asof = NULL)
+find_job(conn, asof = NULL)
 }
 \description{
 Locates the job with the specified asof date or the latest if not specified

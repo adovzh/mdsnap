@@ -3,6 +3,19 @@ library(DT)
 library(mdsnap)
 library(logging)
 library(ggplot2)
+library(DBI)
+library(pool)
+
+pool <- dbPool(drv = RPostgreSQL::PostgreSQL(),
+               host = Sys.getenv("MDB_HOST"),
+               port = Sys.getenv("MDB_PORT"),
+               dbname = Sys.getenv("MDB_NAME"),
+               user = Sys.getenv("MDB_USER"),
+               password = Sys.getenv("MDB_PWD"))
+
+onStop(function() {
+    poolClose(pool)
+})
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
@@ -32,29 +45,15 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output) {
-    ctx <- defdbcontext(host = Sys.getenv("MDB_HOST"),
-                        port = Sys.getenv("MDB_PORT"),
-                        dbname = Sys.getenv("MDB_NAME"),
-                        user = Sys.getenv("MDB_USER"),
-                        password = Sys.getenv("MDB_PWD"))
-    loginfo("Connecting to DB")
-    db_connect(ctx)
-
-    onStop(function() {
-        db_disconnect(ctx)
-        conn_status <- if (db_connected(ctx)) "connected" else "disconnected"
-        loginfo("I-Dashboard session cleanup, status: %s", conn_status)
-    })
-
-    pname <- portfolio_list(ctx)[1, "name"]
-    p <- portfolio_load(ctx$conn, pname)
+    # session globals
+    pname <- portfolio_list(pool)[1, "name"]
+    p <- portfolio_load(pool, pname)
     pa <- portfolio_alloc(p)
-    sl <- security_list(ctx$conn)
+    sl <- security_list(pool)
     psyms <- securities(pa, sl, "non_cash")
     csyms <- securities(pa, sl, "cash")
-    mdr <- mdrates(ctx, psyms, "close")
+    mdr <- mdrates(pool, psyms, "close")
     mdr_snapshot <- rates_snapshot(mdr)$close
-
 
     # Holdings table
     # index set of non cash portfolio securities in palloc
@@ -105,9 +104,7 @@ server <- function(input, output) {
     })
 
     output$last_date_available <- renderInfoBox({
-        mdr <- mdrates(ctx, psyms)
-        snap <- rates_snapshot(mdr)$close
-        last_date <- max(snap$LastDate)
+        last_date <- max(mdr_snapshot$LastDate)
         infoBox("Last Date", last_date, icon = icon("calendar"))
     })
 

@@ -3,7 +3,7 @@
 #' This function snaps current market data snapshot for the symbols universe
 #' and puts them into PostgreSQL database. The universe is configured in the
 #' database itself and needs to be set up manually.
-#' @param ctx Database context
+#' @param conn Database connection or connection pool
 #' @export
 #' @importFrom DBI dbGetQuery dbWriteTable
 #' @importFrom RPostgreSQL PostgreSQL
@@ -11,14 +11,7 @@
 #' @importFrom zoo coredata index
 #' @importFrom xts make.index.unique
 
-mdsnap <- function(ctx) {
-    if (!db_connected(ctx)) {
-        db_connect(ctx)
-        on.exit(db_disconnect(ctx), add = TRUE)
-    }
-
-    conn <- ctx$conn
-
+mdsnap <- function(conn) {
     secQuery <- "SELECT security_id AS id, security_name AS name
                  FROM t_security s inner join t_snap_source ss
                     on s.snap_source_id = ss.snap_source_id
@@ -66,7 +59,7 @@ mdsnap <- function(ctx) {
 #'
 #' This function loads the specified set of symbols from the database
 #' into an xts object.
-#' @param ctx Database context
+#' @param conn Database connection or connection pool
 #' @param symbols A set of symbols to extract, must be specified explicitly.
 #' @param asof Allows to specify a snapshot to extract, NULL means to latest.
 #' @param features Features to extract.
@@ -75,15 +68,9 @@ mdsnap <- function(ctx) {
 #' @importFrom xts xts
 #' @author Alexander Dovzhikov, \email{alexander.dovzhikov@gmail.com}
 
-mdload <- function(ctx, symbols, asof = NULL,
+mdload <- function(conn, symbols, asof = NULL,
                    features = c("open", "high", "low", "close", "volume", "adjusted")) {
-    if (!db_connected(ctx)) {
-        db_connect(ctx)
-        on.exit(db_disconnect(ctx), add = TRUE)
-    }
-
-    conn <- ctx$conn
-    j <- find_job(ctx, asof)
+    j <- find_job(conn, asof)
 
     # find securities
     result <- lapply(symbols, function(sym) {
