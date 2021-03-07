@@ -22,14 +22,15 @@ mdrates <- function(conn, symbols,
 
 #' @export
 #' @author Alexander Dovzhikov
-rates_snapshot <- function(mdr) {
+rates_snapshot <- function(mdr, asof = Sys.Date()) {
     lapply(mdr, function(frates) {
         syms <- names(frates)
+        fr <- frates[index(frates) <= asof, ]
         last_dates <- as.Date(sapply(syms, function(sym) {
-            as.character(max(index(na.omit(frates[, sym]))))
+            as.character(max(index(na.omit(fr[, sym]))))
         }))
         last_rates <- sapply(seq_along(syms), function(idx) {
-            frates[last_dates[idx], syms[idx]]
+            fr[last_dates[idx], syms[idx]]
         })
 
         data.frame(Symbol = syms, LastDate = last_dates, LastRate = last_rates)

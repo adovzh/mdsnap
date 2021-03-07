@@ -33,8 +33,8 @@ ui <- dashboardPage(
                 status = "primary", plotOutput("summary_chart"))
         ),
         fluidRow(
-            infoBoxOutput("asof"),
             infoBoxOutput("portfolio_name"),
+            infoBoxOutput("asof"),
             infoBoxOutput("last_date_available")
         ),
         fluidRow(
