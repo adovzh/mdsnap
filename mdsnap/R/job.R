@@ -31,10 +31,21 @@ find_job <- function(conn, asof = NULL) {
                 inner join t_snap_source ss on j.snap_status_id = ss.snap_source_id"
 
     j <- if (is.null(asof)) {
-        sql <- paste(sql, "WHERE created_on=(SELECT MAX(created_on) FROM t_job)")
+        sql <- paste(sql, "where created_on=(
+                     select max(created_on) from t_job j2
+                        inner join t_job_status js2
+                        on js2.job_status_id = j2.job_status_id
+                     where js2.job_status_name = 'COMPLETED')
+                            and js.job_status_name = 'COMPLETED'")
         dbGetQuery(conn, sql)
     } else {
-        sql <- paste(sql, "created_on::date = $1")
+        sql <- paste(sql, "where created_on=(
+                        select max(created_on) from t_job j2
+                            inner join t_job_status js2
+                            on js2.job_status_id = j2.job_status_id
+                        where js2.job_status_name = 'COMPLETED'
+                            and j2.created_on::date <= $1)
+                            and js.job_status_name = 'COMPLETED'")
         dbGetQuery(conn, sql, list(as.character(asof)))
     }
 
