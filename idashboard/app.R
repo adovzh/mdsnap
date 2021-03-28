@@ -45,6 +45,11 @@ ui <- dashboardPage(
                         infoBoxOutput("last_date_available")
                     ),
                     fluidRow(
+                        box(title = "Total PnL Table", solidHeader = TRUE,
+                            status = "primary", width = 12,
+                            DTOutput("total_pnl_table"))
+                    ),
+                    fluidRow(
                         box(title = "Debug", solidHeader = TRUE,
                             status = "primary",
                             verbatimTextOutput("debug"))
@@ -115,66 +120,10 @@ server <- function(input, output) {
         mdprice(portfolio_snapshot(p, mdr, sl, asof = d))
     })
     hist_mv_ds <- data.frame(Date = hist_mv_dates, MV = hist_mv_values)
+
     # historical PnL
-    # hist_pnl_dates <- c(seq(portfolio_start_date(p), to = Sys.Date(),
-    #                       by = "year"), Sys.Date())
-    pStartDate <- portfolio_start_date(p)
-    pEndDate <- Sys.Date()
-    nextYear <- as.integer(format(pStartDate, "%Y")) + 1
-    hist_pnl_dates <- c(pStartDate - 1,
-                        seq(as.Date(paste0(nextYear, "-01-01")),
-                            to = Sys.Date(), by = "year") - 1,
-                        Sys.Date())
-    years <- unique(format(hist_pnl_dates, "%Y"))
-    hist_pnl_mv <- sapply(hist_pnl_dates, function(d) {
-        mdprice(portfolio_snapshot(p, mdr, sl, asof = d))
-    })
-    hist_idx_inflows <- findInterval(p[!p$buy_flag, "date"], hist_pnl_dates,
-                                     left.open = TRUE)
-    hist_ag_inflows <- aggregate(p[!p$buy_flag, "amount", drop=F],
-                                 by = list(index = hist_idx_inflows), sum)
-    hist_idx_outflows <- findInterval(p[p$buy_flag, "date"], hist_pnl_dates,
-                                      left.open = TRUE)
-    hist_ag_outflows <- aggregate(p[p$buy_flag, "amount", drop=F],
-                                  by = list(index = hist_idx_outflows), sum)
-
-    hist_ag_inflows <- hist_ag_inflows[hist_ag_inflows$index > 0, ]
-    hist_ag_outflows <- hist_ag_outflows[hist_ag_outflows$index > 0, ]
-
-    hist_pnl_inflows <- numeric(length(hist_pnl_dates) - 1)
-    hist_pnl_inflows[hist_ag_inflows$index] <- hist_ag_inflows$amount
-
-    hist_pnl_outflows <- numeric(length(hist_pnl_dates) - 1)
-    hist_pnl_outflows[hist_ag_outflows$index] <- hist_ag_outflows$amount
-
-    hist_pnlcol_start <- hist_pnl_dates[-length(hist_pnl_dates)] + 1
-    hist_pnlcol_end <- hist_pnl_dates[-1]
-    hist_pnlcol_mv_start <- hist_pnl_mv[-length(hist_pnl_mv)]
-    hist_pnlcol_mv_end <- hist_pnl_mv[-1]
-    hist_pnlcol_mv_change <- hist_pnlcol_mv_end - hist_pnlcol_mv_start
-
-    hist_pnl_idx_flows <- findInterval(p$date, hist_pnl_dates, left.open = TRUE)
-    hist_pnl_irr <- sapply(unique(hist_pnl_idx_flows), function(idx) {
-        pds <- p[hist_pnl_idx_flows == idx,]
-        cf_dates <- c(hist_pnl_dates[idx], pds$date, hist_pnl_dates[idx+1])
-        dt <- datediff("act/365f")(cf_dates, hist_pnl_dates[idx+1])
-        cf_amounts <- -buysell(pds$buy_flag) * pds$amount
-        cf_amounts <- c(-hist_pnl_mv[idx], cf_amounts, hist_pnl_mv[idx+1])
-        uniroot(function(r) sum(exp(r * dt) * cf_amounts), c(-5, 5))$root
-    })
-
-    hist_pnl_ds <- data.frame(
-        `Start Date` =  hist_pnlcol_start,
-        `End Date` = hist_pnlcol_end,
-        `Start MV` = hist_pnlcol_mv_start,
-        `End MV` = hist_pnlcol_mv_end,
-        Inflows = hist_pnl_inflows,
-        Outflows = hist_pnl_outflows,
-        RealPnL = hist_pnl_inflows - hist_pnl_outflows,
-        UnrealPnL = hist_pnlcol_mv_change,
-        PnL = diff(hist_pnl_mv) + hist_pnl_inflows - hist_pnl_outflows,
-        Yield = hist_pnl_irr
-    )
+    hist_pnl <- hist_pnl(p, mdr, sl)
+    total_pnl <- hist_pnl(p, mdr, sl, p_split = "none")
 
     output$debug <- renderPrint({
         pa
@@ -258,19 +207,31 @@ server <- function(input, output) {
     })
 
     output$hist_pnl_table <- renderDT({
-        datatable(hist_pnl_ds,
-                  colnames = c("Start Date", "End Date", "Start MV", "End MV",
-                               "Inflows", "Outflows",
-                               "Realised PnL", "Unrealised PnL", "PnL", "Yield"),
+        datatable(hist_pnl$ds,
+                  colnames = hist_pnl$colnames,
+                  rownames = FALSE,
+                  selection = "none",
                   options = list(lengthChange = FALSE,
                                  ordering = FALSE,
                                  paging = FALSE,
                                  searching = FALSE,
                                  info = FALSE)) %>%
-            formatRound(c("Start.MV", "End.MV", "Inflows", "Outflows",
-                          "RealPnL", "UnrealPnL", "PnL"),
-                        digits = 2) %>%
-            formatPercentage("Yield", digits = 2)
+            formatRound(hist_pnl$rnd_cols, digits = 2) %>%
+            formatPercentage(hist_pnl$pct_cols, digits = 2)
+    })
+
+    output$total_pnl_table <- renderDT({
+        datatable(total_pnl$ds,
+                  colnames = total_pnl$colnames,
+                  rownames = FALSE,
+                  selection = "none",
+                  options = list(lengthChange = FALSE,
+                                 ordering = FALSE,
+                                 paging = FALSE,
+                                 searching = FALSE,
+                                 info = FALSE)) %>%
+            formatRound(total_pnl$rnd_cols, digits = 2) %>%
+            formatPercentage(total_pnl$pct_cols, digits = 2)
     })
 }
 

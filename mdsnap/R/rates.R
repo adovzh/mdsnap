@@ -21,6 +21,7 @@ mdrates <- function(conn, symbols,
 }
 
 #' @export
+#' @importFrom stats na.omit
 #' @author Alexander Dovzhikov
 rates_snapshot <- function(mdr, asof = Sys.Date()) {
     lapply(mdr, function(frates) {
