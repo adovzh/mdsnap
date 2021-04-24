@@ -24,8 +24,8 @@ ui <- dashboardPage(
     dashboardHeader(title = "I-Dashboard"),
     dashboardSidebar(
         sidebarMenu(
-            menuItem("Overview", tabName = "tab_overview"),
-            menuItem("History", tabName = "tab_history", selected = TRUE)
+            menuItem("Overview", tabName = "tab_overview", selected=TRUE),
+            menuItem("History", tabName = "tab_history")
         )
     ),
     dashboardBody(
@@ -58,9 +58,11 @@ ui <- dashboardPage(
             tabItem(tabName = "tab_history",
                     fluidRow(
                         box(title = "Historical MV Chart", solidHeader = TRUE,
-                            status = "primary", plotOutput("hist_mv_chart")),
+                            status = "primary", width = 8,
+                            plotOutput("hist_mv_chart")),
                         box(title = "Historical MV Table", solidHeader = TRUE,
-                            status = "primary", DTOutput("hist_mv"))
+                            status = "primary", width = 4,
+                            DTOutput("hist_mv"))
                     ),
                     fluidRow(
                         box(title = "Historical PnL Table", solidHeader = TRUE,
@@ -198,7 +200,9 @@ server <- function(input, output) {
     })
 
     output$hist_mv <- renderDT({
-        datatable(hist_mv_ds)
+        datatable(hist_mv_ds, rownames = FALSE, selection = "none",
+                  options = list(ordering = FALSE, searching = FALSE)) %>%
+            formatRound("MV", digits = 2)
     })
 
     output$hist_mv_chart <- renderPlot({
